@@ -1,46 +1,44 @@
 package com.example.demo.configuration;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.annotation.EnableKafka;
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
-@EnableKafka
 @Configuration
-public class KafkaConsumerConfig {
- 
+public class RabbitMQConfig {
+
+    public static final String QUEUE_NAME = "data.queue";
+    public static final String EXCHANGE_NAME = "data.exchange";
+    public static final String ROUTING_KEY = "data.routing.key";
+
     @Bean
-    public ConsumerFactory<String, String> consumerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(
-          ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, 
-          "127.0.0.1:9092");
-        props.put(
-          ConsumerConfig.GROUP_ID_CONFIG, 
-          "group-id");
-        props.put(
-          ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, 
-          StringDeserializer.class);
-        props.put(
-          ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, 
-         StringDeserializer.class);
-        return new DefaultKafkaConsumerFactory<>(props);
+    Queue queue() {
+        return new Queue(QUEUE_NAME, false);
     }
- 
+
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String,String> 
-      kafkaListenerContainerFactory() {
-    
-        ConcurrentKafkaListenerContainerFactory<String, String> factory =
-          new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
-        return factory;
+    DirectExchange exchange() {
+        return new DirectExchange(EXCHANGE_NAME);
+    }
+
+    @Bean
+    Binding binding(Queue queue, DirectExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+    }
+
+    @Bean
+    public MessageConverter jsonMessageConverter() {
+        return new Jackson2JsonMessageConverter();
+    }
+
+    @Bean
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+        final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setMessageConverter(jsonMessageConverter());
+        return rabbitTemplate;
     }
 }

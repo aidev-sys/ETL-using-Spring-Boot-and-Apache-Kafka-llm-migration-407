@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Controller;
 import com.example.demo.service.LoadingService;
 
@@ -12,7 +12,7 @@ public class LoadingController {
 	private LoadingService service;
 	
 	
-	@KafkaListener(topics = "target_topic")
+	@RabbitListener(queues = "target_queue")
 	public void listen(String message) {
 		
 		System.out.println(message);
